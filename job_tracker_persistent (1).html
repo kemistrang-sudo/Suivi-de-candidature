@@ -1,0 +1,628 @@
+<h2 class="sr-only">Suivi de candidatures — données persistantes entre sessions</h2>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+
+/* ====== PALETTE VIOLET/LAVANDE INSPIRÉE ====== */
+.tracker{
+  padding:0;
+  font-family:var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  background:#FAFAFE;
+  border-radius:16px;
+  overflow:hidden;
+  border:1px solid #E8E5F5;
+}
+
+/* ====== HEADER DÉCORATIF VIOLET ====== */
+.hero{
+  background:linear-gradient(135deg,#A89FE8 0%,#8B7FD9 50%,#9B8FE0 100%);
+  padding:28px 32px 24px;
+  position:relative;
+  overflow:hidden;
+}
+.hero::before{
+  content:"";position:absolute;top:-40px;right:-40px;width:180px;height:180px;
+  background:radial-gradient(circle,rgba(255,255,255,.15) 0%,transparent 70%);
+  border-radius:50%;
+}
+.hero-title{
+  font-size:28px;font-weight:700;color:#fff;letter-spacing:1.5px;
+  text-align:center;text-transform:uppercase;
+  font-family:Georgia, "Times New Roman", serif;
+  text-shadow:0 2px 4px rgba(0,0,0,.08);
+}
+.hero-sub{
+  font-size:13px;color:rgba(255,255,255,.92);text-align:center;
+  margin-top:6px;font-style:italic;letter-spacing:.3px;
+}
+
+/* ====== DASHBOARD SECTION ====== */
+.dashboard{
+  display:grid;
+  grid-template-columns:240px 1fr 1fr;
+  gap:16px;
+  padding:20px 24px;
+  background:#fff;
+  border-bottom:1px solid #EDE9F7;
+}
+
+/* Carte stats verticale (gauche) — style "Job Application Tracker" */
+.summary-card{
+  background:linear-gradient(160deg,#F4F1FC 0%,#EAE4F8 100%);
+  border-radius:12px;
+  padding:18px 16px;
+  border:1px solid #DDD4F0;
+  display:flex;flex-direction:column;gap:10px;
+}
+.summary-brand{
+  text-align:center;padding-bottom:10px;border-bottom:1px dashed #C8BCE8;margin-bottom:4px;
+}
+.summary-brand h2{
+  font-size:18px;color:#5A4FAF;font-family:Georgia, serif;font-weight:700;
+  line-height:1.15;letter-spacing:.5px;
+}
+.summary-brand .moon{font-size:14px;color:#8B7FD9;display:block;margin-top:2px;}
+.summary-row{
+  background:#fff;border-radius:8px;padding:8px 12px;
+  border:1px solid #DFD7F0;
+}
+.summary-row .lbl{
+  font-size:9px;color:#7A6FB8;text-transform:uppercase;letter-spacing:.08em;font-weight:600;
+}
+.summary-row .val{
+  font-size:18px;font-weight:700;color:#3D3380;margin-top:2px;
+}
+.summary-row.highlight{background:linear-gradient(135deg,#7F77DD,#9B8FE0);border-color:#7F77DD;}
+.summary-row.highlight .lbl{color:rgba(255,255,255,.85);}
+.summary-row.highlight .val{color:#fff;}
+
+/* Graphique en barres (milieu) */
+.chart-bars{
+  background:#fff;border-radius:12px;padding:16px;
+  border:1px solid #EDE9F7;
+}
+.chart-title{
+  font-size:11px;color:#7A6FB8;text-transform:uppercase;letter-spacing:.1em;
+  font-weight:600;margin-bottom:12px;
+}
+.bar-row{
+  display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:11px;
+}
+.bar-row:last-child{margin-bottom:0;}
+.bar-label{
+  width:90px;color:#5A4FAF;font-weight:500;text-align:right;font-size:10px;
+  text-transform:uppercase;letter-spacing:.04em;
+}
+.bar-track{
+  flex:1;height:18px;background:#F4F1FC;border-radius:4px;position:relative;overflow:hidden;
+}
+.bar-fill{
+  height:100%;background:linear-gradient(90deg,#A89FE8,#8B7FD9);
+  border-radius:4px;display:flex;align-items:center;justify-content:flex-end;
+  padding-right:6px;color:#fff;font-weight:600;font-size:10px;
+  transition:width .5s ease;
+}
+.bar-fill.zero{background:#E8E5F5;color:#A89FE8;justify-content:center;padding:0;}
+
+/* Pie chart (droite) */
+.chart-pie{
+  background:#fff;border-radius:12px;padding:16px;
+  border:1px solid #EDE9F7;
+  display:flex;flex-direction:column;
+}
+.pie-wrap{
+  display:flex;align-items:center;justify-content:center;gap:16px;flex:1;
+}
+.pie-svg{width:110px;height:110px;flex-shrink:0;}
+.pie-legend{display:flex;flex-direction:column;gap:6px;font-size:11px;}
+.pie-legend-item{display:flex;align-items:center;gap:6px;color:#5A4FAF;}
+.pie-legend-item .sw{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+
+/* ====== TOOLBAR ====== */
+.toolbar-wrap{
+  background:#fff;padding:14px 24px;border-bottom:1px solid #EDE9F7;
+}
+.header-bar{
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;
+}
+.title-area p{font-size:12px;color:#7A6FB8;}
+.header-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.save-indicator{
+  font-size:11px;color:#639922;display:flex;align-items:center;gap:4px;opacity:0;
+  transition:opacity 0.4s;background:#EAF3DE;padding:3px 8px;border-radius:99px;
+}
+.save-indicator.show{opacity:1;}
+
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.toolbar input[type=text]{
+  font-size:13px;padding:6px 12px;height:32px;border-radius:8px;
+  border:1px solid #DFD7F0;background:#fff;color:#2D2660;width:200px;
+  transition:border-color .15s;
+}
+.toolbar input[type=text]:focus{outline:none;border-color:#8B7FD9;box-shadow:0 0 0 3px rgba(139,127,217,.12);}
+.toolbar select{
+  font-size:12px;padding:6px 10px;height:32px;border-radius:8px;
+  border:1px solid #DFD7F0;background:#F8F6FD;color:#5A4FAF;cursor:pointer;
+  font-weight:500;
+}
+.toolbar select:focus{outline:none;border-color:#8B7FD9;}
+
+.btn{
+  background:#fff;border:1px solid #DFD7F0;border-radius:8px;
+  padding:6px 14px;font-size:13px;font-weight:500;color:#5A4FAF;cursor:pointer;
+  display:inline-flex;align-items:center;gap:5px;height:32px;
+  transition:all .15s;
+}
+.btn:hover{background:#F4F1FC;border-color:#8B7FD9;}
+.btn-primary{
+  background:linear-gradient(135deg,#8B7FD9,#7F77DD);
+  border-color:#7F77DD;color:#fff;
+  box-shadow:0 2px 6px rgba(139,127,217,.25);
+}
+.btn-primary:hover{
+  background:linear-gradient(135deg,#7A6ED0,#6F66D0);color:#fff;
+  box-shadow:0 3px 10px rgba(139,127,217,.35);
+}
+.btn-danger{background:#FCEBEB;border-color:#F0959B;color:#791F1F;}
+.btn-danger:hover{background:#F7C1C1;}
+
+/* ====== TABLE ====== */
+.table-section-header{
+  background:linear-gradient(90deg,#8B7FD9,#A89FE8);
+  color:#fff;padding:10px 24px;font-size:12px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.1em;text-align:center;
+}
+.table-wrap{
+  overflow-x:auto;background:#fff;
+}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:1100px;}
+thead th{
+  background:#F4F1FC;color:#5A4FAF;font-weight:600;font-size:10px;
+  text-transform:uppercase;letter-spacing:.06em;padding:10px 11px;
+  text-align:left;border-bottom:2px solid #DDD4F0;cursor:pointer;user-select:none;
+  white-space:nowrap;
+}
+thead th:hover{background:#EAE4F8;color:#3D3380;}
+tbody tr{
+  border-bottom:1px solid #EDE9F7;transition:background .12s;
+}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:nth-child(even){background:#FBFAFE;}
+tbody tr:hover{background:#F4F1FC;}
+td{
+  padding:10px 11px;color:#2D2660;vertical-align:middle;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+td.company-cell{font-weight:600;color:#3D3380;}
+td.notes-cell{
+  max-width:160px;color:#7A6FB8;font-size:12px;
+  white-space:normal;line-height:1.35;
+}
+
+/* ====== BADGES VIOLET PASTEL ====== */
+.badge{
+  font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;
+  display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+  border:1px solid transparent;
+}
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.b-applied{background:#EEEDFE;color:#3C3489;border-color:#D4D0F5;}
+.b-interview{background:#DDD4F0;color:#3C3489;border-color:#BFB3E3;}
+.b-offer{background:#EAF3DE;color:#27500A;border-color:#CFE0B0;}
+.b-rejected{background:#FCEBEB;color:#791F1F;border-color:#F0C5C5;}
+.b-negotiation{background:#FAEEDA;color:#633806;border-color:#E8CFA0;}
+.b-archived{background:#F1EFE8;color:#444441;border-color:#D9D5CA;}
+.b-need{background:#FBEAF0;color:#72243E;border-color:#F0C5D4;}
+
+.abt{
+  background:none;border:none;cursor:pointer;color:#7A6FB8;
+  padding:4px 6px;border-radius:6px;font-size:15px;transition:all .12s;
+}
+.abt:hover{color:#3D3380;background:#EAE4F8;}
+
+.interest-h{color:#27500A;font-weight:600;}
+.interest-m{color:#633806;font-weight:600;}
+.interest-l{color:#7A6FB8;}
+.dl-warn{color:#BA7517;font-weight:600;}
+.dl-ok{color:#7A6FB8;}
+.dl-past{color:#A32D2D;text-decoration:line-through;}
+.empty-row td{
+  text-align:center;color:#7A6FB8;padding:2.5rem;font-size:13px;background:#FBFAFE;
+}
+
+/* ====== MODAL ====== */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(60,52,137,.45);
+  display:flex;align-items:flex-start;justify-content:center;padding-top:5vh;z-index:1000;
+  backdrop-filter:blur(3px);
+}
+.modal{
+  background:#fff;border-radius:14px;
+  border:1px solid #DDD4F0;padding:24px;width:100%;max-width:560px;
+  box-shadow:0 20px 50px rgba(60,52,137,.25);
+}
+.modal h2{
+  font-size:17px;font-weight:600;margin-bottom:16px;color:#3D3380;
+  padding-bottom:10px;border-bottom:1px solid #EDE9F7;
+}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.fg{display:flex;flex-direction:column;gap:4px;}
+.fg.full{grid-column:1/-1;}
+.fg label{
+  font-size:10px;color:#7A6FB8;font-weight:600;
+  text-transform:uppercase;letter-spacing:.05em;
+}
+.fg input,.fg select,.fg textarea{
+  font-size:13px;padding:7px 10px;border-radius:8px;
+  border:1px solid #DFD7F0;background:#fff;color:#2D2660;
+  transition:border-color .15s;
+}
+.fg input:focus,.fg select:focus,.fg textarea:focus{
+  outline:none;border-color:#8B7FD9;box-shadow:0 0 0 3px rgba(139,127,217,.12);
+}
+.fg textarea{resize:vertical;min-height:60px;font-family:inherit;}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+
+.loading-overlay{
+  position:absolute;inset:0;background:#fff;display:flex;
+  align-items:center;justify-content:center;z-index:20;border-radius:16px;
+}
+.loading-overlay p{color:#7A6FB8;font-size:13px;}
+
+/* Responsive */
+@media (max-width: 900px){
+  .dashboard{grid-template-columns:1fr;}
+  .summary-card{flex-direction:row;flex-wrap:wrap;}
+  .summary-brand{flex:1 1 100%;}
+  .summary-row{flex:1 1 calc(50% - 5px);}
+}
+</style>
+
+<div class="tracker" id="app" style="position:relative;min-height:400px;">
+  <div class="loading-overlay" id="loading-overlay">
+    <p><i class="ti ti-loader" aria-hidden="true" style="font-size:16px;vertical-align:-2px;margin-right:6px;"></i>Chargement des données…</p>
+  </div>
+
+  <!-- HERO HEADER -->
+  <div class="hero">
+    <div class="hero-title">Suivi de Candidatures</div>
+    <div class="hero-sub">Organisez votre recherche d'emploi · Données sauvegardées automatiquement</div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="dashboard">
+    <!-- Carte synthèse gauche -->
+    <div class="summary-card">
+      <div class="summary-brand">
+        <h2>Job<br>Application<span class="moon"> ☾ </span>Tracker</h2>
+      </div>
+      <div class="summary-row">
+        <div class="lbl">CV envoyés</div>
+        <div class="val" id="s-sent">0</div>
+      </div>
+      <div class="summary-row">
+        <div class="lbl">Date du jour</div>
+        <div class="val" id="s-date" style="font-size:13px;line-height:1.3;">—</div>
+      </div>
+      <div class="summary-row highlight">
+        <div class="lbl">Total candidatures</div>
+        <div class="val" id="s-total">0</div>
+      </div>
+    </div>
+
+    <!-- Barres horizontales -->
+    <div class="chart-bars">
+      <div class="chart-title">Répartition par statut</div>
+      <div id="bars-container"></div>
+    </div>
+
+    <!-- Pie chart -->
+    <div class="chart-pie">
+      <div class="chart-title">Type de contrat</div>
+      <div class="pie-wrap">
+        <svg class="pie-svg" viewBox="0 0 42 42" id="pie-svg">
+          <circle cx="21" cy="21" r="15.915" fill="#fff"></circle>
+        </svg>
+        <div class="pie-legend" id="pie-legend"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar-wrap">
+    <div class="header-bar">
+      <div class="title-area">
+        <p id="date-today"></p>
+      </div>
+      <div class="header-actions">
+        <span class="save-indicator" id="save-ind"><i class="ti ti-check" aria-hidden="true" style="font-size:13px;"></i>Sauvegardé</span>
+        <button class="btn btn-danger" onclick="clearAll()"><i class="ti ti-trash" aria-hidden="true"></i>Réinitialiser</button>
+        <button class="btn btn-primary" onclick="openModal()"><i class="ti ti-plus" aria-hidden="true"></i>Nouvelle candidature</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="🔍 Entreprise ou poste…" oninput="render()">
+      <select id="f-st" onchange="render()">
+        <option value="">Tous les statuts</option>
+        <option>Candidature envoyée</option><option>Entretien</option><option>Offre reçue</option>
+        <option>Négociation</option><option>Refusé</option><option>Archivé</option><option>À postuler</option>
+      </select>
+      <select id="f-tp" onchange="render()">
+        <option value="">Tous types</option>
+        <option>CDI</option><option>CDD</option><option>Stage</option><option>Freelance</option><option>Alternance</option>
+      </select>
+      <select id="f-it" onchange="render()">
+        <option value="">Tout intérêt</option>
+        <option>Élevé</option><option>Moyen</option><option>Faible</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- TABLE HEADER BAND -->
+  <div class="table-section-header">Tableau des candidatures</div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th style="width:38px">#</th>
+        <th style="width:140px" onclick="sortBy('company')">Entreprise ↕</th>
+        <th style="width:150px" onclick="sortBy('title')">Poste ↕</th>
+        <th style="width:130px" onclick="sortBy('status')">Statut ↕</th>
+        <th style="width:80px">Contrat</th>
+        <th style="width:80px">Intérêt</th>
+        <th style="width:90px" onclick="sortBy('dateApplied')">Postulé ↕</th>
+        <th style="width:90px" onclick="sortBy('deadline')">Échéance ↕</th>
+        <th style="width:90px">Salaire</th>
+        <th style="width:80px">Lieu</th>
+        <th style="width:80px">Modalité</th>
+        <th style="width:160px">Notes</th>
+        <th style="width:56px"></th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <div id="modal-ct"></div>
+</div>
+
+<script>
+const STORAGE_KEY = 'job-tracker-apps-v2';
+let apps = [];
+let nextId = 1;
+let sortKey = 'dateApplied';
+let sortDir = -1;
+let editId = null;
+
+const DEFAULTS = [
+  {id:1,company:'Acme Corp',title:'Développeur Frontend',status:'Entretien',type:'CDI',interest:'Élevé',dateApplied:'2025-05-01',deadline:'2025-05-20',salary:'48 000 €',location:'Paris',remote:'Hybride',notes:'2e entretien prévu le 18/05'},
+  {id:2,company:'Nova Solutions',title:'Product Manager',status:'Candidature envoyée',type:'CDI',interest:'Élevé',dateApplied:'2025-05-05',deadline:'2025-05-25',salary:'55 000 €',location:'Lyon',remote:'Remote',notes:'Réponse sous 2 semaines'},
+  {id:3,company:'DigitMind',title:'UX Designer',status:'Refusé',type:'CDI',interest:'Moyen',dateApplied:'2025-04-20',deadline:'',salary:'42 000 €',location:'Bordeaux',remote:'Sur site',notes:'Profil trop senior recherché'},
+  {id:4,company:'Helios Tech',title:'Ingénieur Data',status:'Offre reçue',type:'CDI',interest:'Élevé',dateApplied:'2025-04-28',deadline:'2025-05-19',salary:'62 000 €',location:'Toulouse',remote:'Hybride',notes:'Délai de réponse au 19/05'},
+  {id:5,company:'Startup XYZ',title:'Développeur Fullstack',status:'À postuler',type:'CDD',interest:'Moyen',dateApplied:'',deadline:'2025-05-22',salary:'3 500 €/mois',location:'Remote',remote:'Remote',notes:'Portfolio demandé'},
+  {id:6,company:'ConseilPro',title:'Consultant Junior',status:'Négociation',type:'CDI',interest:'Faible',dateApplied:'2025-04-15',deadline:'',salary:'38 000 €',location:'Paris',remote:'Sur site',notes:'Contre-proposition envoyée'},
+  {id:7,company:'InnoGroup',title:'Chef de projet',status:'Archivé',type:'CDI',interest:'Faible',dateApplied:'2025-03-10',deadline:'',salary:'50 000 €',location:'Nantes',remote:'Hybride',notes:'Poste pourvu en interne'},
+];
+
+const BADGE = {
+  'Candidature envoyée':{cls:'b-applied',dot:'#378ADD'},
+  'Entretien':{cls:'b-interview',dot:'#7F77DD'},
+  'Offre reçue':{cls:'b-offer',dot:'#639922'},
+  'Refusé':{cls:'b-rejected',dot:'#E24B4A'},
+  'Négociation':{cls:'b-negotiation',dot:'#BA7517'},
+  'Archivé':{cls:'b-archived',dot:'#888780'},
+  'À postuler':{cls:'b-need',dot:'#D4537E'},
+};
+
+// Couleurs pour le pie chart (types de contrat) — palette violet
+const TYPE_COLORS = {
+  'CDI':'#7F77DD',
+  'CDD':'#A89FE8',
+  'Stage':'#C8BCE8',
+  'Freelance':'#5A4FAF',
+  'Alternance':'#DDD4F0',
+};
+
+const todayStr = new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+document.getElementById('date-today').textContent = 'Aujourd\'hui : ' + new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+document.getElementById('s-date').textContent = todayStr;
+
+function fmtDate(d){if(!d)return'—';const[y,m,dd]=d.split('-');return dd+'/'+m+'/'+y;}
+function dlCls(d){if(!d)return'dl-ok';const t=new Date();t.setHours(0,0,0,0);const diff=(new Date(d)-t)/86400000;if(diff<0)return'dl-past';if(diff<=5)return'dl-warn';return'dl-ok';}
+
+let saveTimer = null;
+async function save(){
+  try{
+    if(window.storage && window.storage.set){
+      await window.storage.set(STORAGE_KEY, JSON.stringify({apps,nextId}));
+    } else {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({apps,nextId}));
+    }
+    const ind = document.getElementById('save-ind');
+    ind.classList.add('show');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(()=>ind.classList.remove('show'), 2000);
+  }catch(e){console.error('Storage save error:',e);}
+}
+
+async function load(){
+  try{
+    let raw = null;
+    if(window.storage && window.storage.get){
+      const res = await window.storage.get(STORAGE_KEY);
+      raw = res && res.value;
+    } else {
+      raw = localStorage.getItem(STORAGE_KEY);
+    }
+    if(raw){
+      const d = JSON.parse(raw);
+      apps = d.apps || [];
+      nextId = d.nextId || (apps.length ? Math.max(...apps.map(a=>a.id))+1 : 1);
+    } else {
+      apps = JSON.parse(JSON.stringify(DEFAULTS));
+      nextId = 8;
+      await save();
+    }
+  }catch(e){
+    apps = JSON.parse(JSON.stringify(DEFAULTS));
+    nextId = 8;
+  }
+  document.getElementById('loading-overlay').style.display='none';
+  render();
+}
+
+async function clearAll(){
+  if(!confirm('Réinitialiser toutes les candidatures ?')) return;
+  apps = JSON.parse(JSON.stringify(DEFAULTS));
+  nextId = 8;
+  await save();
+  render();
+}
+
+function getFiltered(){
+  const q=document.getElementById('search').value.toLowerCase();
+  const st=document.getElementById('f-st').value;
+  const tp=document.getElementById('f-tp').value;
+  const it=document.getElementById('f-it').value;
+  return apps.filter(a=>{
+    if(q && !a.company.toLowerCase().includes(q) && !a.title.toLowerCase().includes(q)) return false;
+    if(st && a.status!==st) return false;
+    if(tp && a.type!==tp) return false;
+    if(it && a.interest!==it) return false;
+    return true;
+  }).sort((a,b)=>{
+    let va=a[sortKey]||'', vb=b[sortKey]||'';
+    return va<vb?-sortDir:va>vb?sortDir:0;
+  });
+}
+
+function sortBy(k){if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=1;}render();}
+
+function renderDashboard(){
+  const total=apps.length;
+  const sent=apps.filter(a=>a.dateApplied).length;
+  document.getElementById('s-total').textContent=total;
+  document.getElementById('s-sent').textContent=sent;
+
+  // Barres horizontales par statut
+  const statuses=['À postuler','Candidature envoyée','Entretien','Négociation','Offre reçue','Refusé','Archivé'];
+  const counts=statuses.map(s=>apps.filter(a=>a.status===s).length);
+  const max=Math.max(...counts,1);
+  const labels={'À postuler':'À postuler','Candidature envoyée':'Envoyé','Entretien':'Entretien','Négociation':'Négo.','Offre reçue':'Offre','Refusé':'Refusé','Archivé':'Archivé'};
+  document.getElementById('bars-container').innerHTML=statuses.map((s,i)=>{
+    const c=counts[i];
+    const pct=c===0?6:Math.max((c/max)*100,12);
+    return`<div class="bar-row">
+      <div class="bar-label">${labels[s]}</div>
+      <div class="bar-track"><div class="bar-fill ${c===0?'zero':''}" style="width:${pct}%">${c}</div></div>
+    </div>`;
+  }).join('');
+
+  // Pie chart par type de contrat
+  const types=['CDI','CDD','Stage','Freelance','Alternance'];
+  const tcounts=types.map(t=>({type:t,n:apps.filter(a=>a.type===t).length})).filter(x=>x.n>0);
+  const tsum=tcounts.reduce((s,x)=>s+x.n,0);
+  const svg=document.getElementById('pie-svg');
+  svg.innerHTML='<circle cx="21" cy="21" r="15.915" fill="#F4F1FC"></circle>';
+  let offset=25;
+  if(tsum===0){
+    svg.innerHTML+='<circle cx="21" cy="21" r="15.915" fill="none" stroke="#E8E5F5" stroke-width="8"></circle><text x="21" y="23" text-anchor="middle" font-size="5" fill="#A89FE8">Vide</text>';
+  } else {
+    tcounts.forEach(x=>{
+      const pct=(x.n/tsum)*100;
+      const color=TYPE_COLORS[x.type]||'#A89FE8';
+      svg.innerHTML+=`<circle cx="21" cy="21" r="15.915" fill="none" stroke="${color}" stroke-width="8" stroke-dasharray="${pct} ${100-pct}" stroke-dashoffset="${offset}" transform="rotate(-90 21 21)"></circle>`;
+      offset-=pct;
+    });
+    // centre avec total
+    svg.innerHTML+=`<text x="21" y="20" text-anchor="middle" font-size="6" font-weight="700" fill="#3D3380">${tsum}</text><text x="21" y="25" text-anchor="middle" font-size="2.5" fill="#7A6FB8">contrats</text>`;
+  }
+  document.getElementById('pie-legend').innerHTML=tcounts.length?tcounts.map(x=>{
+    const color=TYPE_COLORS[x.type]||'#A89FE8';
+    const pct=Math.round((x.n/tsum)*100);
+    return`<div class="pie-legend-item"><span class="sw" style="background:${color}"></span>${x.type} <span style="color:#A89FE8;margin-left:auto;">${x.n} (${pct}%)</span></div>`;
+  }).join(''):'<div class="pie-legend-item" style="color:#A89FE8;">Aucune donnée</div>';
+}
+
+function render(){
+  renderDashboard();
+  const filtered=getFiltered();
+  const tbody=document.getElementById('tbody');
+  if(!filtered.length){
+    tbody.innerHTML='<tr class="empty-row"><td colspan="13"><i class="ti ti-inbox" style="font-size:18px;vertical-align:-3px;margin-right:6px;" aria-hidden="true"></i>Aucune candidature trouvée</td></tr>';
+    return;
+  }
+  tbody.innerHTML=filtered.map((a,i)=>{
+    const b=BADGE[a.status]||{cls:'b-archived',dot:'#888'};
+    const ic=a.interest==='Élevé'?'interest-h':a.interest==='Moyen'?'interest-m':'interest-l';
+    const ia=a.interest==='Élevé'?'▲ ':a.interest==='Moyen'?'● ':'▽ ';
+    return`<tr>
+      <td style="color:#A89FE8;font-size:11px;font-weight:600;">${i+1}</td>
+      <td class="company-cell">${a.company}</td>
+      <td style="color:#5A4FAF;">${a.title}</td>
+      <td><span class="badge ${b.cls}"><span class="dot" style="background:${b.dot}"></span>${a.status}</span></td>
+      <td style="color:#7A6FB8;font-size:12px;font-weight:500;">${a.type}</td>
+      <td class="${ic}">${ia}${a.interest}</td>
+      <td style="color:#7A6FB8;font-size:12px;">${fmtDate(a.dateApplied)}</td>
+      <td class="${dlCls(a.deadline)}" style="font-size:12px;">${fmtDate(a.deadline)}</td>
+      <td style="font-size:12px;color:#5A4FAF;font-weight:500;">${a.salary||'—'}</td>
+      <td style="font-size:12px;color:#7A6FB8;">${a.location||'—'}</td>
+      <td style="font-size:12px;color:#7A6FB8;">${a.remote||'—'}</td>
+      <td class="notes-cell">${a.notes||'—'}</td>
+      <td style="display:flex;gap:2px;padding:7px 5px;">
+        <button class="abt" onclick="openModal(${a.id})" title="Modifier" aria-label="Modifier"><i class="ti ti-edit" aria-hidden="true"></i>✎</button>
+        <button class="abt" onclick="deleteApp(${a.id})" title="Supprimer" aria-label="Supprimer"><i class="ti ti-trash" aria-hidden="true"></i>🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function deleteApp(id){
+  if(!confirm('Supprimer cette candidature ?')) return;
+  apps=apps.filter(a=>a.id!==id);
+  await save();
+  render();
+}
+
+function openModal(id){
+  editId=id||null;
+  const a=id?apps.find(x=>x.id===id):{};
+  const v=f=>a[f]||'';
+  const opts=(arr,field)=>arr.map(s=>`<option${v(field)===s?' selected':''}>${s}</option>`).join('');
+  document.getElementById('modal-ct').innerHTML=`
+    <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <h2>${id?'✎ Modifier la candidature':'+ Nouvelle candidature'}</h2>
+        <div class="form-grid">
+          <div class="fg"><label>Entreprise *</label><input id="m-company" value="${v('company')}" placeholder="Nom de l'entreprise"></div>
+          <div class="fg"><label>Poste *</label><input id="m-title" value="${v('title')}" placeholder="Intitulé du poste"></div>
+          <div class="fg"><label>Statut</label><select id="m-status">${opts(['Candidature envoyée','Entretien','Offre reçue','Négociation','Refusé','Archivé','À postuler'],'status')}</select></div>
+          <div class="fg"><label>Type de contrat</label><select id="m-type">${opts(['CDI','CDD','Stage','Freelance','Alternance'],'type')}</select></div>
+          <div class="fg"><label>Intérêt</label><select id="m-interest">${opts(['Élevé','Moyen','Faible'],'interest')}</select></div>
+          <div class="fg"><label>Modalité</label><select id="m-remote">${opts(['Hybride','Remote','Sur site'],'remote')}</select></div>
+          <div class="fg"><label>Date de candidature</label><input type="date" id="m-dateApplied" value="${v('dateApplied')}"></div>
+          <div class="fg"><label>Date limite</label><input type="date" id="m-deadline" value="${v('deadline')}"></div>
+          <div class="fg"><label>Salaire</label><input id="m-salary" placeholder="ex : 45 000 €" value="${v('salary')}"></div>
+          <div class="fg"><label>Lieu</label><input id="m-location" placeholder="Ville" value="${v('location')}"></div>
+          <div class="fg full"><label>Notes</label><textarea id="m-notes" placeholder="Informations complémentaires…">${v('notes')}</textarea></div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn" onclick="closeModal()">Annuler</button>
+          <button class="btn btn-primary" onclick="saveApp()">💾 Enregistrer</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function closeModal(){document.getElementById('modal-ct').innerHTML='';editId=null;}
+
+async function saveApp(){
+  const g=id=>document.getElementById(id).value;
+  const data={company:g('m-company'),title:g('m-title'),status:g('m-status'),type:g('m-type'),interest:g('m-interest'),remote:g('m-remote'),dateApplied:g('m-dateApplied'),deadline:g('m-deadline'),salary:g('m-salary'),location:g('m-location'),notes:g('m-notes')};
+  if(!data.company||!data.title){alert('Entreprise et Poste sont obligatoires');return;}
+  if(editId){apps=apps.map(a=>a.id===editId?{...a,...data}:a);}
+  else{apps.push({id:nextId++,...data});}
+  await save();
+  closeModal();
+  render();
+}
+
+load();
+</script>
