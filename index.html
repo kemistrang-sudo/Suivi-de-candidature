@@ -400,13 +400,13 @@ let sortDir = -1;
 let editId = null;
 
 const DEFAULTS = [
-  {id:1,company:'Acme Corp',title:'Développeur Frontend',status:'Entretien',type:'CDI',interest:'Élevé',dateApplied:'2025-05-01',deadline:'2025-05-20',salary:'48 000 €',location:'Paris',remote:'Hybride',notes:'Très intéressé, entretien prévus'}
-  ,{id:2,company:'Nova Solutions',title:'Product Manager',status:'Candidature envoyée',type:'CDI',interest:'Élevé',dateApplied:'2025-05-05',deadline:'2025-05-25',salary:'55 000 €',location:'Lyon',remote:'Sur site',notes:''}
-  ,{id:3,company:'DigitMind',title:'UX Designer',status:'Refusé',type:'CDI',interest:'Moyen',dateApplied:'2025-04-20',deadline:'',salary:'42 000 €',location:'Bordeaux',remote:'Sur site',notes:'Profil junior recherché'}
-  ,{id:4,company:'Helios Tech',title:'Ingénieur Data',status:'Offre reçue',type:'CDI',interest:'Élevé',dateApplied:'2025-04-28',deadline:'2025-05-19',salary:'62 000 €',location:'Toulouse',remote:'Hybride',notes:'À considérer sérieusement'}
-  ,{id:5,company:'Startup XYZ',title:'Développeur Fullstack',status:'À postuler',type:'CDD',interest:'Moyen',dateApplied:'',deadline:'2025-05-22',salary:'3 500 €/mois',location:'Remote',remote:'Remote',notes:'Stack React/Node'}
-  ,{id:6,company:'ConseilPro',title:'Consultant Junior',status:'Négociation',type:'CDI',interest:'Faible',dateApplied:'2025-04-15',deadline:'',salary:'38 000 €',location:'Paris',remote:'Sur site',notes:''}
-  ,{id:7,company:'InnoGroup',title:'Chef de projet',status:'Archivé',type:'CDI',interest:'Faible',dateApplied:'2025-03-10',deadline:'',salary:'50 000 €',location:'Nantes',remote:'Hybride',notes:'Posté en mars'}
+  {id:1,company:'Acme Corp',title:'Développeur Frontend',status:'Entretien',type:'CDI',interest:'Élevé',dateApplied:'2025-05-01',deadline:'2025-05-20',salary:'48 000 €',location:'Paris',remote:'Hybride',notes:'Première phase confirmée'},
+  {id:2,company:'Nova Solutions',title:'Product Manager',status:'Candidature envoyée',type:'CDI',interest:'Élevé',dateApplied:'2025-05-05',deadline:'2025-05-25',salary:'55 000 €',location:'Lyon',remote:'Remote',notes:'Application en attente'},
+  {id:3,company:'DigitMind',title:'UX Designer',status:'Refusé',type:'CDI',interest:'Moyen',dateApplied:'2025-04-20',deadline:'',salary:'42 000 €',location:'Bordeaux',remote:'Sur site',notes:'Profil non retenu'},
+  {id:4,company:'Helios Tech',title:'Ingénieur Data',status:'Offre reçue',type:'CDI',interest:'Élevé',dateApplied:'2025-04-28',deadline:'2025-05-19',salary:'62 000 €',location:'Toulouse',remote:'Hybride',notes:'À confirmer'},
+  {id:5,company:'Startup XYZ',title:'Développeur Fullstack',status:'À postuler',type:'CDD',interest:'Moyen',dateApplied:'',deadline:'2025-05-22',salary:'3 500 €/mois',location:'Remote',remote:'Remote',notes:'Intéressant mais CDD'},
+  {id:6,company:'ConseilPro',title:'Consultant Junior',status:'Négociation',type:'CDI',interest:'Faible',dateApplied:'2025-04-15',deadline:'',salary:'38 000 €',location:'Paris',remote:'Sur site',notes:'En discussion'},
+  {id:7,company:'InnoGroup',title:'Chef de projet',status:'Archivé',type:'CDI',interest:'Faible',dateApplied:'2025-03-10',deadline:'',salary:'50 000 €',location:'Nantes',remote:'Hybride',notes:'Retiré volontairement'}
 ];
 
 const BADGE = {
@@ -633,102 +633,113 @@ async function saveApp(){
 }
 
 async function exportPDF(){
-  const {jsPDF} = window.jspdf;
-  const doc = new jsPDF();
-  
-  // Palette violet pour le PDF
-  const purpleLight = [168, 159, 232];
-  const purpleMed = [139, 127, 217];
-  const purpleDark = [61, 51, 128];
-  
-  // Titre
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.setTextColor(...purpleDark);
-  doc.text("Suivi de mes Candidatures", 14, 15);
-  
-  // Sous-titre avec date
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(10);
-  doc.setTextColor(120, 111, 184);
-  const today = new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
-  doc.text(`Généré le ${today}`, 14, 21);
-  
-  // Résumé
-  const total = apps.length;
-  const sent = apps.filter(a=>a.dateApplied).length;
-  const statuses = ['À postuler','Candidature envoyée','Entretien','Négociation','Offre reçue','Refusé','Archivé'];
-  const counts = statuses.map(s=>apps.filter(a=>a.status===s).length);
-  
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(90, 79, 175);
-  doc.text(`Total candidatures : ${total} | CV envoyés : ${sent} | En cours : ${counts[1] + counts[2] + counts[3] + counts[4]}`, 14, 27);
-  
-  // Table
-  const tableData = apps.map((a, i) => [
-    i + 1,
-    a.company,
-    a.title,
-    a.status,
-    a.type,
-    a.interest,
-    fmtDate(a.dateApplied),
-    fmtDate(a.deadline),
-    a.salary || '—',
-    a.location || '—',
-    a.remote || '—',
-  ]);
-  
-  doc.autoTable({
-    head: [['#', 'Entreprise', 'Poste', 'Statut', 'Contrat', 'Intérêt', 'Postulé', 'Échéance', 'Salaire', 'Lieu', 'Modalité']],
-    body: tableData,
-    startY: 33,
-    margin: 14,
-    theme: 'grid',
-    headerStyles: {
-      fillColor: purpleMed,
-      textColor: [255, 255, 255],
-      fontStyle: 'bold',
-      fontSize: 9,
-      halign: 'center',
-      valign: 'middle',
-    },
-    bodyStyles: {
-      textColor: [45, 38, 96],
-      fontSize: 8,
-      valign: 'middle',
-    },
-    alternateRowStyles: {
-      fillColor: [250, 250, 254],
-    },
-    columnStyles: {
-      0: { halign: 'center', cellWidth: 8 },
-      1: { cellWidth: 25 },
-      2: { cellWidth: 25 },
-      3: { cellWidth: 18, halign: 'center' },
-      4: { cellWidth: 12, halign: 'center' },
-      5: { cellWidth: 12, halign: 'center' },
-      6: { cellWidth: 15, halign: 'center' },
-      7: { cellWidth: 15, halign: 'center' },
-      8: { cellWidth: 18 },
-      9: { cellWidth: 15 },
-      10: { cellWidth: 15 },
-    },
-    didDrawPage: function(data) {
-      // Pied de page
-      const pageSize = doc.internal.pageSize;
-      const pageHeight = pageSize.height;
-      const pageWidth = pageSize.width;
-      doc.setFontSize(8);
-      doc.setTextColor(150, 150, 150);
-      doc.text(`Page ${data.pageNumber}`, pageWidth - 20, pageHeight - 10);
+  try {
+    // Vérifier que jsPDF est disponible
+    if(!window.jspdf || !window.jspdf.jsPDF) {
+      alert('La bibliothèque jsPDF n\'est pas chargée. Vérifiez votre connexion internet.');
+      return;
     }
-  });
-  
-  // Télécharger
-  const filename = `Suivi_Candidatures_${new Date().toISOString().split('T')[0]}.pdf`;
-  doc.save(filename);
+    
+    const jsPDF = window.jspdf.jsPDF;
+    const doc = new jsPDF({orientation:'p', unit:'mm', format:'a4'});
+    
+    // Palette violet pour le PDF
+    const purpleLight = [168, 159, 232];
+    const purpleMed = [139, 127, 217];
+    const purpleDark = [61, 51, 128];
+    
+    // Titre
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(...purpleDark);
+    doc.text("Suivi de mes Candidatures", 14, 15);
+    
+    // Sous-titre avec date
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(10);
+    doc.setTextColor(120, 111, 184);
+    const today = new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+    doc.text(`Généré le ${today}`, 14, 21);
+    
+    // Résumé
+    const total = apps.length;
+    const sent = apps.filter(a=>a.dateApplied).length;
+    const statuses = ['À postuler','Candidature envoyée','Entretien','Négociation','Offre reçue','Refusé','Archivé'];
+    const counts = statuses.map(s=>apps.filter(a=>a.status===s).length);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(90, 79, 175);
+    doc.text(`Total candidatures : ${total} | CV envoyés : ${sent} | En cours : ${counts[1] + counts[2] + counts[3] + counts[4]}`, 14, 27);
+    
+    // Table
+    const tableData = apps.map((a, i) => [
+      i + 1,
+      a.company,
+      a.title,
+      a.status,
+      a.type,
+      a.interest,
+      fmtDate(a.dateApplied),
+      fmtDate(a.deadline),
+      a.salary || '—',
+      a.location || '—',
+      a.remote || '—',
+    ]);
+    
+    doc.autoTable({
+      head: [['#', 'Entreprise', 'Poste', 'Statut', 'Contrat', 'Intérêt', 'Postulé', 'Échéance', 'Salaire', 'Lieu', 'Modalité']],
+      body: tableData,
+      startY: 33,
+      margin: 14,
+      theme: 'grid',
+      headerStyles: {
+        fillColor: purpleMed,
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 9,
+        halign: 'center',
+        valign: 'middle',
+      },
+      bodyStyles: {
+        textColor: [45, 38, 96],
+        fontSize: 8,
+        valign: 'middle',
+      },
+      alternateRowStyles: {
+        fillColor: [250, 250, 254],
+      },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 8 },
+        1: { cellWidth: 25 },
+        2: { cellWidth: 25 },
+        3: { cellWidth: 18, halign: 'center' },
+        4: { cellWidth: 12, halign: 'center' },
+        5: { cellWidth: 12, halign: 'center' },
+        6: { cellWidth: 15, halign: 'center' },
+        7: { cellWidth: 15, halign: 'center' },
+        8: { cellWidth: 18 },
+        9: { cellWidth: 15 },
+        10: { cellWidth: 15 },
+      },
+      didDrawPage: function(data) {
+        // Pied de page
+        const pageSize = doc.internal.pageSize;
+        const pageHeight = pageSize.height;
+        const pageWidth = pageSize.width;
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`Page ${data.pageNumber}`, pageWidth - 20, pageHeight - 10);
+      }
+    });
+    
+    // Télécharger
+    const filename = `Suivi_Candidatures_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(filename);
+  } catch(e) {
+    console.error('Erreur lors de l\'export PDF:', e);
+    alert('Erreur lors de la création du PDF. Vérifiez la console pour plus de détails.');
+  }
 }
 
 load();
